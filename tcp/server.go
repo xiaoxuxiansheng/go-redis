@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -39,12 +40,14 @@ func ListAndServce(address string, handler TCPHandler) error {
 }
 
 func listenerAndService(listener net.Listener, handler TCPHandler, closeCh chan struct{}) error {
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 	defer close(errCh)
 	go func() {
 		select {
 		case <-closeCh:
-		case <-errCh:
+			fmt.Println("server closing...")
+		case err := <-errCh:
+			fmt.Printf("server err: %v", err)
 		}
 		_ = listener.Close()
 		_ = handler.Close()
@@ -59,6 +62,7 @@ func listenerAndService(listener net.Listener, handler TCPHandler, closeCh chan 
 				time.Sleep(5 * time.Millisecond)
 				continue
 			}
+
 			errCh <- err
 			break
 		}
